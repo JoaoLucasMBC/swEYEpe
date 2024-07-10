@@ -6,7 +6,7 @@ public class EnterScript : MonoBehaviour
 {
     public EyeTracker EyePos;
     private Renderer rend;
-    public float timeToInput = 1.5f;
+    public float timeToInput = 0.2f;
     private float timer = 0;
     public KeyboardTextSystem keyboard;
 

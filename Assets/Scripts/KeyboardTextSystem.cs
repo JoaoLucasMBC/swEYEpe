@@ -94,60 +94,32 @@ public class KeyboardTextSystem : MonoBehaviour
         initValueList();
         FillListWithRandomNumbers(numberResults, 10, 1, 30);
         manager.LoadCharacters(randomWords, numberResults, 10);
-    }
-
-    private void Update()
-    {
-        var percentages = "";
-        if (currTextInput.Length < 4)
-        {
-            int x = 4-currTextInput.Length;
-            percentages = String.Concat(Enumerable.Repeat("%", x));
-        }
-        probGenerator.Text = percentages + currTextInput.ToLower();
 
         probabilities = probGenerator.GetTopWeights(4);
 
         updatePosDict();
+    }
 
+    private void Update()
+    {
         CurrCopy.text = textInputRef.text;
         TargetCopy.text = targetTextRef.text;
     }
 
     public void RecieveInput(string text)
     {
-        if (currWord > 1)
-        {
-            manager.enable_timer();
-        }
+        if (!everStarted) return;
 
         if (text == "Clear")
         {
             currTextInput = "";
-            lastInput = "";
-            beganWord = false;
             blinker.inputted();
         }
         else
         {
-            //if (lastInput != text) {
-            currTextInput += text;
-            beganWord = true;
-            blinker.inputted();
-            //}
-
-            if (!everStarted && currWord > 1)
-            {
-                everStarted = true;
-                manager.nextWord();
-                manager.enable_timer();
-                Debug.Log("Started!");
-                Debug.Log("What");
-            }
+            // call the function that updates the trie
 
             
-            lastInput = text;
-
         }
 
         if (currTextInput == targetText)
@@ -155,32 +127,21 @@ public class KeyboardTextSystem : MonoBehaviour
             GenerateText();
             currTextInput = "";
             completed = true;
-            beganWord = false;
-            lastInput = "";
             manager.nextWord();
             manager.pause_timer();
         }
 
-        GenerateWords();
-
-        textInputRef.text = currTextInput;
     }
 
     public void RecieveSuggestion(string input)
     {
+        if (!everStarted) return;
+
         input = input.ToUpper();
 
         currTextInput = input;
         blinker.inputted();
         beganWord = true;
-
-        if (!everStarted && currWord == 1)
-        {
-            everStarted = true;
-            manager.nextWord();
-            manager.enable_timer();
-            Debug.Log("Started!");
-        }
 
         lastInput = input[input.Length - 1].ToString();
 
@@ -201,10 +162,6 @@ public class KeyboardTextSystem : MonoBehaviour
 
     public void RecieveDelete()
     {
-        GenerateText();
-        manager.nextWord();
-
-        /*
 
         if (currTextInput == "")
         {
@@ -213,8 +170,7 @@ public class KeyboardTextSystem : MonoBehaviour
 
         blinker.deleted();
 
-
-        currTextInput =  currTextInput.Remove(currTextInput.Length - 1, 1);
+        currTextInput = "";
         textInputRef.text = currTextInput;
 
         int len = currTextInput.Length;
@@ -227,10 +183,6 @@ public class KeyboardTextSystem : MonoBehaviour
             lastInput = "";
             beganWord= false;
         }
-
-        GenerateWords();
-
-        */
     }
 
 
@@ -254,29 +206,6 @@ public class KeyboardTextSystem : MonoBehaviour
       
         
         targetTextRef.text = targetText;
-    }
-
-    public float giveSize(string input)
-    {
-
-        if (lastInput == "" || input == "Clear" || input == "Delete")
-        {
-            return 1;
-        }
-        /*
-        else
-        {
-            return totalDict[lastInput][input] + .85f;
-        }
-        */
-        float totalVal = .85f;
-
-        if (probabilities.ContainsKey(input.ToLower()))
-        {
-            totalVal += (float)probabilities[input.ToLower()]/1.2f;
-        }
-
-        return totalVal;
     }
 
     private void initRegular()
@@ -374,20 +303,16 @@ public class KeyboardTextSystem : MonoBehaviour
     {
         Debug.Log("Recieved enter");
 
-        //manager.reset_timer();
-        //everStarted = false;
-        //currWord = 1;
-        GenerateText();
-
-        //manager.get_name(currTextInput);
-
-        currTextInput = "";
-        lastInput = "";
-        beganWord = false;
-        textInputRef.text = currTextInput;
+        if (everStarted)
+        {
+            GenerateText();
+        }
+        else
+        {
+            everStarted = true;
+        }
 
         manager.enable_timer();
-        completed = true;
         manager.nextWord();
     }
 

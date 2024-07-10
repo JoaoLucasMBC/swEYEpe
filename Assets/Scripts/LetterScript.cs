@@ -40,7 +40,14 @@ public class LetterScript : MonoBehaviour
 
         
 
-        //if (LookingAtBox(EyePos.worldPosition, EyePos.gazeLocation) && ((rend.enabled == true) || (PartiallyOn)))
+        if (LookingAtBox(EyePos.worldPosition, EyePos.gazeLocation) && ((rend.enabled == true) || (PartiallyOn)))
+        {
+            // Change the color of the key if you are looking at it
+            rend.material.color = new Color(0.0f, 0.0f, 0.0f);
+        } else
+        {
+            rend.material.color = new Color(0.4f, 0.4f, 0.4f);
+        }
 
 
         if(neverEnter)
