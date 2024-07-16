@@ -5,6 +5,7 @@ using System.Globalization;
 using System.Linq;
 using System.Numerics;
 using System.Xml;
+using System.IO;
 using TMPro;
 using Unity.VisualScripting;
 using Unity.XR.CoreUtils.Datums;
@@ -13,6 +14,8 @@ using UnityEngine.Windows;
 using static UnityEngine.InputSystem.LowLevel.InputStateHistory;
 using static UnityEngine.Rendering.DebugUI;
 using Vector3 = UnityEngine.Vector3;
+using Vector2 = UnityEngine.Vector2;
+using UnityEngine.Networking;
 
 public class KeyboardTextSystem : MonoBehaviour
 {
@@ -82,6 +85,13 @@ public class KeyboardTextSystem : MonoBehaviour
     private List<Vector3> ValueList = new List<Vector3>();
     private Dictionary<string, int> PosDict = new Dictionary<string, int>();
 
+    public EyeTracker EyePos;
+    private List<Vector2> gazePoints;
+
+    void Awake()
+    {
+        gazePoints = new List<Vector2>();
+    }
 
     // Start is called before the first frame update
     void Start()
@@ -94,9 +104,6 @@ public class KeyboardTextSystem : MonoBehaviour
         initValueList();
         FillListWithRandomNumbers(numberResults, 10, 1, 30);
         manager.LoadCharacters(randomWords, numberResults, 10);
-
-        probabilities = probGenerator.GetTopWeights(4);
-
         updatePosDict();
     }
 
@@ -104,6 +111,23 @@ public class KeyboardTextSystem : MonoBehaviour
     {
         CurrCopy.text = textInputRef.text;
         TargetCopy.text = targetTextRef.text;
+
+        if (everStarted)
+        {
+            var pos = manager.GetGazePoint();
+            
+            //Debug.Log(gazePoints);
+            gazePoints.Add(new Vector2(pos.x, pos.y));
+        }
+
+        if (currTextInput == targetText)
+        {
+            GenerateText();
+            currTextInput = "";
+            everStarted = false;
+            lastInput = "";
+            manager.nextWord();
+        }
     }
 
     public void RecieveInput(string text)
@@ -114,23 +138,9 @@ public class KeyboardTextSystem : MonoBehaviour
         {
             currTextInput = "";
             blinker.inputted();
+            // reset the eye positions list
+            gazePoints.Clear();
         }
-        else
-        {
-            // call the function that updates the trie
-
-            
-        }
-
-        if (currTextInput == targetText)
-        {
-            GenerateText();
-            currTextInput = "";
-            completed = true;
-            manager.nextWord();
-            manager.pause_timer();
-        }
-
     }
 
     public void RecieveSuggestion(string input)
@@ -139,9 +149,10 @@ public class KeyboardTextSystem : MonoBehaviour
 
         input = input.ToUpper();
 
+        if (string.IsNullOrEmpty(input)) return;
+
         currTextInput = input;
         blinker.inputted();
-        beganWord = true;
 
         lastInput = input[input.Length - 1].ToString();
 
@@ -149,8 +160,7 @@ public class KeyboardTextSystem : MonoBehaviour
         {
             GenerateText();
             currTextInput = "";
-            completed = true;
-            beganWord = false;
+            everStarted = false;
             lastInput = "";
             manager.nextWord();
         }
@@ -173,16 +183,7 @@ public class KeyboardTextSystem : MonoBehaviour
         currTextInput = "";
         textInputRef.text = currTextInput;
 
-        int len = currTextInput.Length;
-
-        if (len > 0)
-        {
-            lastInput = currTextInput[currTextInput.Length - 1].ToString();
-        } else
-        {
-            lastInput = "";
-            beganWord= false;
-        }
+        gazePoints.Clear();
     }
 
 
@@ -305,7 +306,7 @@ public class KeyboardTextSystem : MonoBehaviour
 
         if (everStarted)
         {
-            GenerateText();
+            StartCoroutine(runPrediction());
         }
         else
         {
@@ -314,6 +315,48 @@ public class KeyboardTextSystem : MonoBehaviour
 
         manager.enable_timer();
         manager.nextWord();
+    }
+
+    private IEnumerator runPrediction()
+    {
+        GazeData gazeData = new GazeData { gaze_points = gazePoints };
+
+        string json = JsonUtility.ToJson(gazeData);
+        Debug.Log("Gaze Points: " + gazePoints);
+        Debug.Log("Serialized JSON: " + json);
+
+        using (UnityWebRequest www = UnityWebRequest.Post("http://localhost:5000/predict", json, "application/json"))
+        {
+            yield return www.SendWebRequest();
+
+            if (www.result == UnityWebRequest.Result.ConnectionError || www.result == UnityWebRequest.Result.ProtocolError)
+            {
+                Debug.Log(www.error);
+            }
+            else
+            {
+                var response = JsonUtility.FromJson<Response>(www.downloadHandler.text);
+                topWords.Clear();  // Limpa a lista anterior, se necessário
+                topWords.AddRange(response.top_words);
+                Debug.Log("Top palavras atualizadas.");
+
+                currTextInput = topWords[0];
+                textInputRef.text = currTextInput;
+            }
+        }
+    }
+
+    [System.Serializable]
+    public class GazeData
+    {
+        public List<Vector2> gaze_points;
+    }
+
+
+    [System.Serializable]
+    public class Response
+    {
+        public List<string> top_words;  // Ajuste conforme a estrutura do JSON retornado
     }
 
     private void GenerateWords()

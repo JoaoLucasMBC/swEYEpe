@@ -131,6 +131,10 @@ public class KeyboardExperimentManager : MonoBehaviour
         //Debug.Log("TOTAL LENGTH IS: " + characters);
     }
 
+    public Vector2 GetGazePoint()
+    {
+        return FindIntersection(EyePos.worldPosition, EyePos.gazeLocation);
+    }
 
     public static Vector2 FindIntersection(Vector3 userPos, Vector3 fixationPT)
     {
