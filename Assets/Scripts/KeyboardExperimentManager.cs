@@ -21,8 +21,8 @@ public class KeyboardExperimentManager : MonoBehaviour
     private List<string> managerWords = new List<string>();
     private int managerLen;
 
-    private string pathToTXT = @"C:\Users\joaolmbc\Desktop\Softkeyboard\ExperimentDocJohnny3.txt";
-    private string eyeTrackingPath = @"C:\Users\joaolmbc\Desktop\Softkeyboard\EyeTrackingJohnny3.txt";
+    private string pathToTXT = @"C:\Users\joaolmbc\Desktop\Softkeyboard\ExperimentDocJohnny4.txt";
+    private string eyeTrackingPath = @"C:\Users\joaolmbc\Desktop\Softkeyboard\EyeTrackingJohnny4.txt";
 
     private bool pause = true;
 

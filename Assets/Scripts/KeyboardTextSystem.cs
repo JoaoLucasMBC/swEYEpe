@@ -32,7 +32,8 @@ public class KeyboardTextSystem : MonoBehaviour
     public bool beganWord = false;
 
 
-    private bool everStarted = false;
+    private bool started = false;
+    private bool inputtingName = false;
     private int currWord = 0;
     private List<String> topWords = new List<string>();
     private bool usingSpecial = false;
@@ -112,11 +113,9 @@ public class KeyboardTextSystem : MonoBehaviour
         CurrCopy.text = textInputRef.text;
         TargetCopy.text = targetTextRef.text;
 
-        if (everStarted)
+        if (started || inputtingName)
         {
             var pos = manager.GetGazePoint();
-            
-            //Debug.Log(gazePoints);
             gazePoints.Add(new Vector2(pos.x, pos.y));
         }
 
@@ -124,7 +123,7 @@ public class KeyboardTextSystem : MonoBehaviour
         {
             GenerateText();
             currTextInput = "";
-            everStarted = false;
+            started = false;
             lastInput = "";
             manager.nextWord();
         }
@@ -132,7 +131,7 @@ public class KeyboardTextSystem : MonoBehaviour
 
     public void RecieveInput(string text)
     {
-        if (!everStarted) return;
+        if (!started) return;
 
         if (text == "Clear")
         {
@@ -140,13 +139,13 @@ public class KeyboardTextSystem : MonoBehaviour
             blinker.inputted();
             // reset the eye positions list
             gazePoints.Clear();
+            started = false;
+            inputtingName = false;
         }
     }
 
     public void RecieveSuggestion(string input)
     {
-        if (!everStarted) return;
-
         input = input.ToUpper();
 
         if (string.IsNullOrEmpty(input)) return;
@@ -156,15 +155,15 @@ public class KeyboardTextSystem : MonoBehaviour
 
         lastInput = input[input.Length - 1].ToString();
 
-        if (currTextInput == targetText)
+        if (currTextInput == targetText || currWord == 1)
         {
+            Debug.Log("entrei");
             GenerateText();
             currTextInput = "";
-            everStarted = false;
+            started = false;
             lastInput = "";
             manager.nextWord();
         }
-        GenerateWords();
 
         textInputRef.text = currTextInput;
 
@@ -172,18 +171,14 @@ public class KeyboardTextSystem : MonoBehaviour
 
     public void RecieveDelete()
     {
-
-        if (currTextInput == "")
-        {
-            return;
-        }
-
         blinker.deleted();
 
         currTextInput = "";
         textInputRef.text = currTextInput;
 
         gazePoints.Clear();
+        started = false;
+        inputtingName = false;
     }
 
 
@@ -289,7 +284,7 @@ public class KeyboardTextSystem : MonoBehaviour
     {
         usingSpecial = !usingSpecial;
         manager.reset_timer();
-        everStarted = false;
+        started = false;
         currWord = 0;
         GenerateText();
         currTextInput = "";
@@ -304,17 +299,21 @@ public class KeyboardTextSystem : MonoBehaviour
     {
         Debug.Log("Recieved enter");
 
-        if (everStarted)
+        blinker.inputted();
+
+        if (started)
         {
             StartCoroutine(runPrediction());
+            OutputData.Write(gazePoints, randomWords[numberResults[currWord - 1]], @"C:\Users\joaolmbc\Desktop\Softkeyboard\gaze-collection2.txt");
+            started = false;
+            gazePoints.Clear();
         }
         else
         {
-            everStarted = true;
+            started = true;
+            manager.enable_timer();
+            manager.nextWord();
         }
-
-        manager.enable_timer();
-        manager.nextWord();
     }
 
     private IEnumerator runPrediction()
@@ -340,7 +339,7 @@ public class KeyboardTextSystem : MonoBehaviour
                 topWords.AddRange(response.top_words);
                 Debug.Log("Top palavras atualizadas.");
 
-                currTextInput = topWords[0];
+                currTextInput = topWords[0].ToUpper();
                 textInputRef.text = currTextInput;
             }
         }
@@ -356,12 +355,7 @@ public class KeyboardTextSystem : MonoBehaviour
     [System.Serializable]
     public class Response
     {
-        public List<string> top_words;  // Ajuste conforme a estrutura do JSON retornado
-    }
-
-    private void GenerateWords()
-    {
-        topWords = wordGenerator.FindTopKNearestWords(currTextInput, 3);
+        public List<string> top_words;
     }
 
     public List<string> GiveTopWords()
