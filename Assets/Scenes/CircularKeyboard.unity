@@ -5154,6 +5154,7 @@ MonoBehaviour:
   TargetCopy: {fileID: 206622214}
   CurrCopy: {fileID: 1443569040}
   beganWord: 0
+  EyePos: {fileID: 0}
 --- !u!224 &857675927
 RectTransform:
   m_ObjectHideFlags: 0
@@ -6756,7 +6757,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   EyePos: {fileID: 1530192151}
-  timeToInput: 1.5
   keyboard: {fileID: 857675926}
 --- !u!65 &1182729448
 BoxCollider:

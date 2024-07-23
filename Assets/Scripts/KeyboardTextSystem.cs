@@ -87,17 +87,19 @@ public class KeyboardTextSystem : MonoBehaviour
     private Dictionary<string, int> PosDict = new Dictionary<string, int>();
 
     public EyeTracker EyePos;
-    private List<Vector2> gazePoints;
+    private List<Vector3> gazePoints;
+    private float currWordTime;
 
     void Awake()
     {
-        gazePoints = new List<Vector2>();
+        gazePoints = new List<Vector3>();
     }
 
     // Start is called before the first frame update
     void Start()
     {
         currTextInput = "";
+        currWordTime = 0.0f;
         textInputRef.text = currTextInput;
         GenerateText();
         initRegular();
@@ -116,7 +118,8 @@ public class KeyboardTextSystem : MonoBehaviour
         if (started || inputtingName)
         {
             var pos = manager.GetGazePoint();
-            gazePoints.Add(new Vector2(pos.x, pos.y));
+            currWordTime += Time.deltaTime;
+            gazePoints.Add(new Vector3(pos.x, pos.y, currWordTime));
         }
 
         if (currTextInput == targetText)
@@ -126,6 +129,8 @@ public class KeyboardTextSystem : MonoBehaviour
             started = false;
             lastInput = "";
             manager.nextWord();
+            gazePoints.Clear();
+            currWordTime = 0.0f;
         }
     }
 
@@ -139,6 +144,7 @@ public class KeyboardTextSystem : MonoBehaviour
             blinker.inputted();
             // reset the eye positions list
             gazePoints.Clear();
+            currWordTime = 0.0f;
             started = false;
             inputtingName = false;
         }
@@ -163,6 +169,8 @@ public class KeyboardTextSystem : MonoBehaviour
             started = false;
             lastInput = "";
             manager.nextWord();
+            gazePoints.Clear();
+            currWordTime = 0.0f;
         }
 
         textInputRef.text = currTextInput;
@@ -177,6 +185,7 @@ public class KeyboardTextSystem : MonoBehaviour
         textInputRef.text = currTextInput;
 
         gazePoints.Clear();
+        currWordTime = 0.0f;
         started = false;
         inputtingName = false;
     }
@@ -304,9 +313,10 @@ public class KeyboardTextSystem : MonoBehaviour
         if (started)
         {
             StartCoroutine(runPrediction());
-            OutputData.Write(gazePoints, randomWords[numberResults[currWord - 1]], @"C:\Users\joaolmbc\Desktop\Softkeyboard\gaze-collection2.txt");
+            OutputData.Write(gazePoints, randomWords[numberResults[currWord - 1]], @"C:\Users\joaolmbc\Desktop\Softkeyboard\gaze-collection4.txt");
             started = false;
             gazePoints.Clear();
+            currWordTime = 0.0f;
         }
         else
         {
@@ -324,7 +334,7 @@ public class KeyboardTextSystem : MonoBehaviour
         Debug.Log("Gaze Points: " + gazePoints);
         Debug.Log("Serialized JSON: " + json);
 
-        using (UnityWebRequest www = UnityWebRequest.Post("http://localhost:5000/predict", json, "application/json"))
+        using (UnityWebRequest www = UnityWebRequest.Post("http://localhost:5000/cluster", json, "application/json"))
         {
             yield return www.SendWebRequest();
 
@@ -348,7 +358,7 @@ public class KeyboardTextSystem : MonoBehaviour
     [System.Serializable]
     public class GazeData
     {
-        public List<Vector2> gaze_points;
+        public List<Vector3> gaze_points;
     }
 
 

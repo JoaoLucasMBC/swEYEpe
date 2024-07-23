@@ -5,7 +5,7 @@ using UnityEngine;
 
 public class OutputData : MonoBehaviour
 {
-    public static void Write(List<Vector2> gazePoints, string word, string path)
+    public static void Write(List<Vector3> gazePoints, string word, string path)
     {
         using (StreamWriter stream = new FileInfo(path).AppendText())
         {
