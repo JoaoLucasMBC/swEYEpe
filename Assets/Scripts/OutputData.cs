@@ -9,12 +9,10 @@ public class OutputData : MonoBehaviour
     {
         using (StreamWriter stream = new FileInfo(path).AppendText())
         {
-            stream.WriteLine(word);
-
             for (int i = 0; i < gazePoints.Count; i++)
             {
                 var point = gazePoints[i];
-                stream.WriteLine(point.x + "," + point.y);
+                stream.WriteLine(word + "," + point.x + "," + point.y + "," + point.z);
             }
 
             stream.WriteLine("");
