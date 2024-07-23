@@ -5,6 +5,7 @@ using System.Globalization;
 using System.Linq;
 using System.Numerics;
 using System.Xml;
+using System.IO;
 using TMPro;
 using Unity.VisualScripting;
 using Unity.XR.CoreUtils.Datums;
@@ -13,6 +14,8 @@ using UnityEngine.Windows;
 using static UnityEngine.InputSystem.LowLevel.InputStateHistory;
 using static UnityEngine.Rendering.DebugUI;
 using Vector3 = UnityEngine.Vector3;
+using Vector2 = UnityEngine.Vector2;
+using UnityEngine.Networking;
 
 public class KeyboardTextSystem : MonoBehaviour
 {
@@ -29,7 +32,8 @@ public class KeyboardTextSystem : MonoBehaviour
     public bool beganWord = false;
 
 
-    private bool everStarted = false;
+    private bool started = false;
+    private bool inputtingName = false;
     private int currWord = 0;
     private List<String> topWords = new List<string>();
     private bool usingSpecial = false;
@@ -82,11 +86,20 @@ public class KeyboardTextSystem : MonoBehaviour
     private List<Vector3> ValueList = new List<Vector3>();
     private Dictionary<string, int> PosDict = new Dictionary<string, int>();
 
+    public EyeTracker EyePos;
+    private List<Vector3> gazePoints;
+    private float currWordTime;
+
+    void Awake()
+    {
+        gazePoints = new List<Vector3>();
+    }
 
     // Start is called before the first frame update
     void Start()
     {
         currTextInput = "";
+        currWordTime = 0.0f;
         textInputRef.text = currTextInput;
         GenerateText();
         initRegular();
@@ -94,106 +107,71 @@ public class KeyboardTextSystem : MonoBehaviour
         initValueList();
         FillListWithRandomNumbers(numberResults, 10, 1, 30);
         manager.LoadCharacters(randomWords, numberResults, 10);
+        updatePosDict();
     }
 
     private void Update()
     {
-        var percentages = "";
-        if (currTextInput.Length < 4)
-        {
-            int x = 4-currTextInput.Length;
-            percentages = String.Concat(Enumerable.Repeat("%", x));
-        }
-        probGenerator.Text = percentages + currTextInput.ToLower();
-
-        probabilities = probGenerator.GetTopWeights(4);
-
-        updatePosDict();
-
         CurrCopy.text = textInputRef.text;
         TargetCopy.text = targetTextRef.text;
-    }
 
-    public void RecieveInput(string text)
-    {
-        if (currWord > 1)
+        if (started || inputtingName)
         {
-            manager.enable_timer();
-        }
-
-        if (text == "Clear")
-        {
-            currTextInput = "";
-            lastInput = "";
-            beganWord = false;
-            blinker.inputted();
-        }
-        else
-        {
-            //if (lastInput != text) {
-            currTextInput += text;
-            beganWord = true;
-            blinker.inputted();
-            //}
-
-            if (!everStarted && currWord > 1)
-            {
-                everStarted = true;
-                manager.nextWord();
-                manager.enable_timer();
-                Debug.Log("Started!");
-                Debug.Log("What");
-            }
-
-            
-            lastInput = text;
-
+            var pos = manager.GetGazePoint();
+            currWordTime += Time.deltaTime;
+            gazePoints.Add(new Vector3(pos.x, pos.y, currWordTime));
         }
 
         if (currTextInput == targetText)
         {
             GenerateText();
             currTextInput = "";
-            completed = true;
-            beganWord = false;
+            started = false;
             lastInput = "";
             manager.nextWord();
-            manager.pause_timer();
+            gazePoints.Clear();
+            currWordTime = 0.0f;
         }
+    }
 
-        GenerateWords();
+    public void RecieveInput(string text)
+    {
+        if (!started) return;
 
-        textInputRef.text = currTextInput;
+        if (text == "Clear")
+        {
+            currTextInput = "";
+            blinker.inputted();
+            // reset the eye positions list
+            gazePoints.Clear();
+            currWordTime = 0.0f;
+            started = false;
+            inputtingName = false;
+        }
     }
 
     public void RecieveSuggestion(string input)
     {
         input = input.ToUpper();
 
+        if (string.IsNullOrEmpty(input)) return;
+
         currTextInput = input;
         blinker.inputted();
-        beganWord = true;
-
-        if (!everStarted && currWord == 1)
-        {
-            everStarted = true;
-            manager.nextWord();
-            manager.enable_timer();
-            Debug.Log("Started!");
-        }
 
         lastInput = input[input.Length - 1].ToString();
 
-        if (currTextInput == targetText)
+        if (currTextInput == targetText || currWord == 1)
         {
+            Debug.Log("entrei");
             GenerateText();
             currTextInput = "";
-            completed = true;
-            beganWord = false;
+            started = false;
             lastInput = "";
             manager.nextWord();
+            gazePoints.Clear();
+            currWordTime = 0.0f;
         }
-        GenerateWords();
 
         textInputRef.text = currTextInput;
 
@@ -201,36 +179,15 @@ public class KeyboardTextSystem : MonoBehaviour
 
     public void RecieveDelete()
     {
-        GenerateText();
-        manager.nextWord();
-
-        /*
-
-        if (currTextInput == "")
-        {
-            return;
-        }
-
         blinker.deleted();
 
-
-        currTextInput =  currTextInput.Remove(currTextInput.Length - 1, 1);
+        currTextInput = "";
         textInputRef.text = currTextInput;
 
-        int len = currTextInput.Length;
-
-        if (len > 0)
-        {
-            lastInput = currTextInput[currTextInput.Length - 1].ToString();
-        } else
-        {
-            lastInput = "";
-            beganWord= false;
-        }
-
-        GenerateWords();
-
-        */
+        gazePoints.Clear();
+        currWordTime = 0.0f;
+        started = false;
+        inputtingName = false;
     }
 
 
@@ -254,29 +211,6 @@ public class KeyboardTextSystem : MonoBehaviour
       
         
         targetTextRef.text = targetText;
-    }
-
-    public float giveSize(string input)
-    {
-
-        if (lastInput == "" || input == "Clear" || input == "Delete")
-        {
-            return 1;
-        }
-        /*
-        else
-        {
-            return totalDict[lastInput][input] + .85f;
-        }
-        */
-        float totalVal = .85f;
-
-        if (probabilities.ContainsKey(input.ToLower()))
-        {
-            totalVal += (float)probabilities[input.ToLower()]/1.2f;
-        }
-
-        return totalVal;
     }
 
     private void initRegular()
@@ -359,7 +293,7 @@ public class KeyboardTextSystem : MonoBehaviour
     {
         usingSpecial = !usingSpecial;
         manager.reset_timer();
-        everStarted = false;
+        started = false;
         currWord = 0;
         GenerateText();
         currTextInput = "";
@@ -374,26 +308,64 @@ public class KeyboardTextSystem : MonoBehaviour
     {
         Debug.Log("Recieved enter");
 
-        //manager.reset_timer();
-        //everStarted = false;
-        //currWord = 1;
-        GenerateText();
+        blinker.inputted();
 
-        //manager.get_name(currTextInput);
-
-        currTextInput = "";
-        lastInput = "";
-        beganWord = false;
-        textInputRef.text = currTextInput;
-
-        manager.enable_timer();
-        completed = true;
-        manager.nextWord();
+        if (started)
+        {
+            StartCoroutine(runPrediction());
+            OutputData.Write(gazePoints, randomWords[numberResults[currWord - 1]], @"C:\Users\joaolmbc\Desktop\Softkeyboard\gaze-collection4.txt");
+            started = false;
+            gazePoints.Clear();
+            currWordTime = 0.0f;
+        }
+        else
+        {
+            started = true;
+            manager.enable_timer();
+            manager.nextWord();
+        }
     }
 
-    private void GenerateWords()
+    private IEnumerator runPrediction()
     {
-        topWords = wordGenerator.FindTopKNearestWords(currTextInput, 3);
+        GazeData gazeData = new GazeData { gaze_points = gazePoints };
+
+        string json = JsonUtility.ToJson(gazeData);
+        Debug.Log("Gaze Points: " + gazePoints);
+        Debug.Log("Serialized JSON: " + json);
+
+        using (UnityWebRequest www = UnityWebRequest.Post("http://localhost:5000/cluster", json, "application/json"))
+        {
+            yield return www.SendWebRequest();
+
+            if (www.result == UnityWebRequest.Result.ConnectionError || www.result == UnityWebRequest.Result.ProtocolError)
+            {
+                Debug.Log(www.error);
+            }
+            else
+            {
+                var response = JsonUtility.FromJson<Response>(www.downloadHandler.text);
+                topWords.Clear();  // Limpa a lista anterior, se necessário
+                topWords.AddRange(response.top_words);
+                Debug.Log("Top palavras atualizadas.");
+
+                currTextInput = topWords[0].ToUpper();
+                textInputRef.text = currTextInput;
+            }
+        }
+    }
+
+    [System.Serializable]
+    public class GazeData
+    {
+        public List<Vector3> gaze_points;
+    }
+
+
+    [System.Serializable]
+    public class Response
+    {
+        public List<string> top_words;
     }
 
     public List<string> GiveTopWords()

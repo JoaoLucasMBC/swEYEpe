@@ -21,8 +21,8 @@ public class KeyboardExperimentManager : MonoBehaviour
     private List<string> managerWords = new List<string>();
     private int managerLen;
 
-    private string pathToTXT = @"C:\Users\joaolmbc\Desktop\Softkeyboard\ExperimentDocJohnny3.txt";
-    private string eyeTrackingPath = @"C:\Users\joaolmbc\Desktop\Softkeyboard\EyeTrackingJohnny3.txt";
+    private string pathToTXT = @"C:\Users\joaolmbc\Desktop\Softkeyboard\ExperimentDocJohnny4.txt";
+    private string eyeTrackingPath = @"C:\Users\joaolmbc\Desktop\Softkeyboard\EyeTrackingJohnny4.txt";
 
     private bool pause = true;
 
@@ -131,6 +131,10 @@ public class KeyboardExperimentManager : MonoBehaviour
         //Debug.Log("TOTAL LENGTH IS: " + characters);
     }
 
+    public Vector2 GetGazePoint()
+    {
+        return FindIntersection(EyePos.worldPosition, EyePos.gazeLocation);
+    }
 
     public static Vector2 FindIntersection(Vector3 userPos, Vector3 fixationPT)
     {

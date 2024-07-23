@@ -6,36 +6,44 @@ public class EnterScript : MonoBehaviour
 {
     public EyeTracker EyePos;
     private Renderer rend;
-    public float timeToInput = 1.5f;
-    private float timer = 0;
+    private float timeToInput = 0.15f;
+    private float timeout = 0.6f;
+    private float timer = 0f;
+    private bool looked = false;
     public KeyboardTextSystem keyboard;
-
-
-    void Start()
-    {
-    }
 
     // Update is called once per frame
     void Update()
     {
 
         rend = gameObject.GetComponent<Renderer>();
+        timer += Time.deltaTime;
 
         if (LookingAtBox(EyePos.worldPosition, EyePos.gazeLocation))
         {
             rend.enabled = false;
-            timer += Time.deltaTime;
-
-            if (timer > timeToInput)
+            
+            if (!looked && timer > timeToInput)
             {
-                timer = 0;
+                looked = true;
+                timer = 0f;
                 keyboard.RecieveEnter();
             }
         }
         else
         {
             rend.enabled = true;
+
+            if (!looked)
+            {
+                timer = 0;
+            }
+        }
+
+        if (looked && timer > timeout)
+        {
             timer = 0;
+            looked = false;
         }
     }
 
