@@ -42,41 +42,56 @@ public class KeyboardTextSystem : MonoBehaviour
     private LevenshteinModel wordGenerator = new LevenshteinModel("Assets/vocab.json", .5,1,1);
     private string[] alphabet = { "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z" };
     private string[] randomWords =
-{
-    "Enter your name, then press the = key",
-    "DESPITE",
-    "MINUTE",
-    "REASON",
-    "FOREIGN",
-    "GREATER",
-    "ANYBODY",
-    "TEACHER",
-    "FUTURE",
-    "PERFECT",
-    "TROUBLE",
-    "BALANCE",
-    "CAPABLE",
-    "EXACTLY",
-    "ANOTHER",
-    "BELIEVE",
-    "CONTROL",
-    "CONNECT",
-    "MESSAGE",
-    "MISTAKE",
-    "NETWORK",
-    "PROCESS",
-    "PROJECT",
-    "SUPPORT",
-    "THOUGHT",
-    "HISTORY",
-    "IMPROVE",
-    "MEETING",
-    "SECTION",
-    "STATION",
-    "THEREFORE",
-    "REMEMBER",
-    "Finished! Stop typing"
-};
+    {
+        "Enter your name",
+        "DESPITE",
+        "MINUTE",
+        "REASON",
+        "FOREIGN",
+        "GREATER",
+        "ANYBODY",
+        "TEACHER",
+        "FUTURE",
+        "PERFECT",
+        "TROUBLE",
+        "BALANCE",
+        "CAPABLE",
+        "EXACTLY",
+        "ANOTHER",
+        "BELIEVE",
+        "CONTROL",
+        "CONNECT",
+        "MESSAGE",
+        "MISTAKE",
+        "NETWORK",
+        "PROCESS",
+        "PROJECT",
+        "SUPPORT",
+        "THOUGHT",
+        "HISTORY",
+        "IMPROVE",
+        "MEETING",
+        "SECTION",
+        "STATION",
+        "THEREFORE",
+        "REMEMBER",
+        "Finished! Stop typing"
+    };
+    private string[] randomSentences =
+    {
+        "Enter your name",
+        "THE QUICK BROWN FOX JUMPED OVER THE LAZY DOG ",
+        "A FASTER TRADER CAN SELL AT A HIGHER PRICE ",
+        "WHATEVER YOU ARE BE A GOOD ONE ",
+        "THE CHANGE YOU WISH TO SEE IN THE WORLD",
+        "YOU ONLY FAIL IF YOU NEVER TRY ",
+        "WHY DO YOU PLAY VIDEO GAMES EVERY DAY  ",
+        "THE GLASS BREAKING WAS A MISTAKE TODAY ",
+        "BUILD A NETWORK FOR A GREATER MEETING ",
+        "DESPITE READING THE MESSAGE HE MADE HISTORY ",
+        "JOHNNY SUPPORTS THEREFORE HE IS AMAZING ",
+        "Finished! Stop typing"
+    };
     private List<int> numberResults = new List<int>();
 
 
@@ -89,10 +104,13 @@ public class KeyboardTextSystem : MonoBehaviour
     public EyeTracker EyePos;
     private List<Vector3> gazePoints;
     private float currWordTime;
+    private string fileId;
 
     void Awake()
     {
         gazePoints = new List<Vector3>();
+        fileId = Guid.NewGuid().ToString().Substring(0, 8);
+        //randomWords = randomSentences;
     }
 
     // Start is called before the first frame update
@@ -106,6 +124,7 @@ public class KeyboardTextSystem : MonoBehaviour
         initSpecial();
         initValueList();
         FillListWithRandomNumbers(numberResults, 10, 1, 30);
+        //FillListWithRandomNumbers(numberResults, 5, 1, 10);
         manager.LoadCharacters(randomWords, numberResults, 10);
         updatePosDict();
     }
@@ -157,6 +176,13 @@ public class KeyboardTextSystem : MonoBehaviour
         if (string.IsNullOrEmpty(input)) return;
 
         currTextInput = input;
+
+        // update the last word
+        //string[] words = currTextInput.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+        //words[words.Length - 1] = input;
+        //currTextInput = string.Join(" ", words);
+        //currTextInput += " ";
+
         blinker.inputted();
 
         lastInput = input[input.Length - 1].ToString();
@@ -182,6 +208,12 @@ public class KeyboardTextSystem : MonoBehaviour
         blinker.deleted();
 
         currTextInput = "";
+
+        //string[] words = currTextInput.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+        //Array.Resize(ref words, words.Length - 1);
+        //currTextInput = string.Join(" ", words);
+        //currTextInput += " ";
+
         textInputRef.text = currTextInput;
 
         gazePoints.Clear();
@@ -313,7 +345,11 @@ public class KeyboardTextSystem : MonoBehaviour
         if (started)
         {
             StartCoroutine(runPrediction());
-            OutputData.Write(gazePoints, randomWords[numberResults[currWord - 1]], @"C:\Users\joaolmbc\Desktop\Softkeyboard\gaze-collection4.txt");
+            string path = @"C:\Users\joaolmbc\Desktop\Softkeyboard\gaze-collection-topg-{0}.txt";
+            if (currWord > 1)
+            {
+                OutputData.Write(gazePoints, randomWords[numberResults[currWord - 2]], string.Format(path, fileId));
+            }
             started = false;
             gazePoints.Clear();
             currWordTime = 0.0f;
@@ -345,11 +381,12 @@ public class KeyboardTextSystem : MonoBehaviour
             else
             {
                 var response = JsonUtility.FromJson<Response>(www.downloadHandler.text);
-                topWords.Clear();  // Limpa a lista anterior, se necessário
+                topWords.Clear();
                 topWords.AddRange(response.top_words);
-                Debug.Log("Top palavras atualizadas.");
+                Debug.Log("Top words updated.");
 
                 currTextInput = topWords[0].ToUpper();
+               // currTextInput += topWords[0].ToUpper() + " ";
                 textInputRef.text = currTextInput;
             }
         }

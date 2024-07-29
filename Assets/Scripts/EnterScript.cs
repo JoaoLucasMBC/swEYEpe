@@ -6,8 +6,8 @@ public class EnterScript : MonoBehaviour
 {
     public EyeTracker EyePos;
     private Renderer rend;
-    private float timeToInput = 0.15f;
-    private float timeout = 0.6f;
+    private float timeToInput = 0.3f;
+    private float timeout = 1f;
     private float timer = 0f;
     private bool looked = false;
     public KeyboardTextSystem keyboard;
