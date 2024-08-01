@@ -85,14 +85,16 @@ public class LetterScript : MonoBehaviour
 
     void CheckPos()
     {
-        var newPos = keyboard.giveUpdatedPositions(gameObject.name);
+        //var newPos = keyboard.giveUpdatedPositions(gameObject.name);
 
-        if (newPos == gameObject.transform.position) {
-            return;
-        } else
-        {
-            gameObject.transform.position = newPos;
-        }
+        //if (newPos == gameObject.transform.position)
+        //{
+        //    return;
+        //}
+        //else
+        //{
+        //    gameObject.transform.position = newPos;
+        //}
     }
 
     void UpdateOn()

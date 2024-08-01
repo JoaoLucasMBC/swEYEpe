@@ -126,7 +126,7 @@ public class KeyboardTextSystem : MonoBehaviour
         FillListWithRandomNumbers(numberResults, 10, 1, 30);
         //FillListWithRandomNumbers(numberResults, 5, 1, 10);
         manager.LoadCharacters(randomWords, numberResults, 10);
-        updatePosDict();
+        //updatePosDict();
     }
 
     private void Update()
