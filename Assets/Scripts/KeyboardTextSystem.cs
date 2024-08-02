@@ -345,7 +345,7 @@ public class KeyboardTextSystem : MonoBehaviour
         if (started)
         {
             StartCoroutine(runPrediction());
-            string path = @"C:\Users\joaolmbc\Desktop\Softkeyboard\gaze-collection-topg-{0}.txt";
+            string path = @"C:\Users\joaolmbc\Desktop\Softkeyboard\gaze-collection-circle-{0}.txt";
             if (currWord > 1)
             {
                 OutputData.Write(gazePoints, randomWords[numberResults[currWord - 2]], string.Format(path, fileId));
@@ -364,13 +364,13 @@ public class KeyboardTextSystem : MonoBehaviour
 
     private IEnumerator runPrediction()
     {
-        GazeData gazeData = new GazeData { gaze_points = gazePoints };
+        GazeData gazeData = new GazeData { gaze_points = gazePoints, radius = 0.891277f, center = new Vector2(0.0f, 0.424f) };
 
         string json = JsonUtility.ToJson(gazeData);
         Debug.Log("Gaze Points: " + gazePoints);
         Debug.Log("Serialized JSON: " + json);
 
-        using (UnityWebRequest www = UnityWebRequest.Post("http://localhost:5000/cluster", json, "application/json"))
+        using (UnityWebRequest www = UnityWebRequest.Post("http://localhost:5000/circle", json, "application/json"))
         {
             yield return www.SendWebRequest();
 
@@ -396,6 +396,8 @@ public class KeyboardTextSystem : MonoBehaviour
     public class GazeData
     {
         public List<Vector3> gaze_points;
+        public float radius;
+        public Vector2 center;
     }
 
 

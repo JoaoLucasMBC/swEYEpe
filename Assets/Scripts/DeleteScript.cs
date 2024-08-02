@@ -17,7 +17,7 @@ public class DeleteScript : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        CheckPos();
+        //CheckPos();
         rend = gameObject.GetComponent<Renderer>();
 
         if (LookingAtBox(EyePos.worldPosition, EyePos.gazeLocation))

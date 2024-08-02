@@ -19,6 +19,11 @@ public class EnterScript : MonoBehaviour
         rend = gameObject.GetComponent<Renderer>();
         timer += Time.deltaTime;
 
+        if (Input.GetKeyDown("space"))
+        {
+            keyboard.RecieveEnter();
+        }
+
         if (LookingAtBox(EyePos.worldPosition, EyePos.gazeLocation))
         {
             rend.enabled = false;
